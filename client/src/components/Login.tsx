@@ -13,7 +13,7 @@ export default function Login({ setUsername, setIsLoggedIn, setChatroom }: Login
         setChatroomSelector(event.target.value)
     }
 
-    function handleSubmit(event) {
+    function handleSubmit(event: any) {
         event.preventDefault()
         setUsername(usernameSelector)
         setChatroom(chatroomSelector)
