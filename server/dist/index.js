@@ -13,22 +13,37 @@ const io = new Server(server, {
 const system = 'system';
 const username = 'user';
 io.on("connection", (socket) => {
-    //console.log("Socket info: ", socket)
-    console.log("Socket is active");
+    //console.log(`User connected: ${socket.id}`)
+    // Behavior when a user joins a room
+    socket.on("JoinRoom", (payload) => {
+        socket.join(payload.chatroom);
+        console.log(`User: ${payload.username} with id: ${socket.id} has joined room: ${payload.chatroom}`);
+        socket.to(payload.chatroom).emit("SendResponse", (socket) => {
+            const response = {
+                username: system,
+                message: `${payload.username} has connected`,
+                chatroom: payload.chatroom,
+            };
+            return response;
+        });
+    });
     // Payload contains incoming information from a client
-    socket.on("chat", (payload) => {
-        console.log("Payload contents: ", payload.message);
-        const response = { username: username, message: payload.message };
-        io.emit("chat", response);
+    socket.on("SendMessage", (payload) => {
+        console.log("Payload contents: ", payload);
+        console.log(`id: ${socket.id} has sent message ${payload.message}`);
+        const response = { username: payload.username, message: payload.message, chatroom: payload.chatroom };
+        socket.to(payload.chatroom).emit("SendResponse", response);
     });
+    /*
     // Send message to everyone except the user that connected
-    socket.broadcast.emit("chat", (socket) => {
-        const response = { username: system, message: "New user has connected" };
-        io.emit("chat", response);
-    });
+    socket.broadcast.emit("chat", (socket: any) => {
+        const response: ChatMessage = {username: system, message:"New user has connected"}
+        io.emit("chat",  response)
+    })
+    */
     // Send message to all users when one user disconnects
     socket.on("disconnect", () => {
-        const response = { username: system, message: "A user has disconnected" };
+        const response = { username: system, message: "A user has disconnected", chatroom: "" };
         io.emit("chat", response);
     });
     // Send message to everyone 

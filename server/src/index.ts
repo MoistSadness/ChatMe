@@ -2,6 +2,7 @@ import express, { Express, Request, Response, response } from "express"
 import { createServer } from 'http'
 import { Server } from "socket.io";
 
+import { UserJoin, FindCurrentUser } from "./utils/users.js";
 
 const PORT = 5305
 
@@ -18,32 +19,53 @@ const system: string = 'system'
 const username: string = 'user'
 
 // Type for the sent message
-export type ChatMessage = {
+type ChatMessage = {
     username: string,
     message: string
-  }
+    chatroom: string,
+}
+type JoinPayload = {
+    username: string,
+    chatroom: string
+}
 
 io.on("connection", (socket) => {
-    //console.log("Socket info: ", socket)
-    console.log("Socket is active")
+    //console.log(`User connected: ${socket.id}`)
 
-    // Payload contains incoming information from a client
-    socket.on("chat", (payload) => {
-        console.log("Payload contents: ", payload.message)
-
-        const response: ChatMessage = {username:username, message:payload.message}
-        io.emit("chat", response)
+    // Behavior when a user joins a room
+    socket.on("JoinRoom", (payload: JoinPayload) => {
+        socket.join(payload.chatroom)
+        console.log(`User: ${payload.username} with id: ${socket.id} has joined room: ${payload.chatroom}`)
+        socket.to(payload.chatroom).emit("SendResponse", (socket: any) => {
+            const response: ChatMessage = { 
+                username: system, 
+                message: `${payload.username} has connected`,
+                chatroom: payload.chatroom,
+            }
+            return response
+        })
     })
 
+    // Payload contains incoming information from a client
+    socket.on("SendMessage", (payload: ChatMessage) => {
+        console.log("Payload contents: ", payload)
+        console.log(`id: ${socket.id} has sent message ${payload.message}`)
+         
+        const response: ChatMessage = { username: payload.username, message: payload.message, chatroom: payload.chatroom }
+        socket.to(payload.chatroom).emit("SendResponse", response)
+    })
+ 
+    /*
     // Send message to everyone except the user that connected
     socket.broadcast.emit("chat", (socket: any) => {
         const response: ChatMessage = {username: system, message:"New user has connected"}
         io.emit("chat",  response)
     })
+    */
 
     // Send message to all users when one user disconnects
-    socket.on("disconnect", () =>{
-        const response: ChatMessage = {username: system, message: "A user has disconnected"}
+    socket.on("disconnect", () => {
+        const response: ChatMessage = { username: system, message: "A user has disconnected", chatroom: "" }
         io.emit("chat", response)
     })
 

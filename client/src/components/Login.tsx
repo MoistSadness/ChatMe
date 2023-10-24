@@ -1,9 +1,17 @@
 import { useState } from "react"
+import io from 'socket.io-client'
+
+const socket = io("http://localhost:5305")
 
 type LoginTypes = {
     setUsername: React.Dispatch<React.SetStateAction<string>>,
     setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>,
     setChatroom: React.Dispatch<React.SetStateAction<string>>,
+}
+
+type UserType = {
+    username: string,
+    chatroom:string,
 }
 
 export default function Login({ setUsername, setIsLoggedIn, setChatroom }: LoginTypes) {
@@ -17,6 +25,11 @@ export default function Login({ setUsername, setIsLoggedIn, setChatroom }: Login
         event.preventDefault()
         setUsername(usernameSelector)
         setChatroom(chatroomSelector)
+
+        // Ping server to join a specific room
+        const user: UserType = { username: usernameSelector, chatroom: chatroomSelector }
+        console.log(user)
+        socket.emit("JoinRoom", user)
 
 
         // Should happen last so everything runs before component is dismounted
